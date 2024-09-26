@@ -1,9 +1,24 @@
 const fs = require('fs');
+const { program } = require('commander');
 
-fs.readFile('data.json', (err, data) => {
+program
+  .requiredOption('-i, --input <path>', 'шлях до файлу для читання (json з даними)')
+  .option('-o, --output <path>', 'шлях до файлу, у якому записуємо результат')
+  .option('-d, --display', 'вивести результат у консоль');
+
+program.parse(process.argv);
+
+const options = program.opts();
+
+if (!options.input) {
+  console.error('Please, specify input file');
+  process.exit(1);
+}
+
+fs.readFile(options.input, (err, data) => {
   if (err) {
-    console.error('Помилка зчитування файлу data.json:', err);
-    return;
+    console.error('Cannot find input file:', err.message);
+    process.exit(1);
   }
 
   try {
@@ -18,9 +33,21 @@ fs.readFile('data.json', (err, data) => {
       return `${item.StockCode}-${item.ValCode}-${item.Attraction}`;
     }).join('\n');
 
-    console.log(result);
+    if (options.display) {
+      console.log(result);
+    }
+
+    if (options.output) {
+      fs.writeFile(options.output, result, (writeErr) => {
+        if (writeErr) {
+          console.error('Помилка запису файлу:', writeErr.message);
+        } else {
+          console.log(`Результат записано у файл: ${options.output}`);
+        }
+      });
+    }
 
   } catch (parseErr) {
-    console.error('Помилка парсингу JSON:', parseErr);
+    console.error('Помилка парсингу JSON:', parseErr.message);
   }
 });
