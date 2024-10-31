@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const { program } = require('commander');
 
 program
@@ -7,7 +8,6 @@ program
   .option('-d, --display', 'вивести результат у консоль');
 
 program.parse(process.argv);
-
 const options = program.opts();
 
 if (!options.input) {
@@ -15,39 +15,33 @@ if (!options.input) {
   process.exit(1);
 }
 
-fs.readFile(options.input, (err, data) => {
-  if (err) {
-    console.error('Cannot find input file:', err.message);
-    process.exit(1);
+const inputPath = path.resolve(options.input);
+
+try {
+  const data = fs.readFileSync(inputPath, 'utf-8');
+  const json = JSON.parse(data);
+
+  if (!Array.isArray(json)) {
+    console.error('Некоректний формат даних. Очікувався масив.');
+    return;
   }
 
-  try {
-    const json = JSON.parse(data);
+  const result = json.map(item => `${item.StockCode}-${item.ValCode}-${item.Attraction}`).join('\n');
 
-    if (!Array.isArray(json)) {
-      console.error('Некоректний формат даних. Очікувався масив.');
-      return;
-    }
-
-    const result = json.map(item => {
-      return `${item.StockCode}-${item.ValCode}-${item.Attraction}`;
-    }).join('\n');
-
-    if (options.display) {
-      console.log(result);
-    }
-
-    if (options.output) {
-      fs.writeFile(options.output, result, (writeErr) => {
-        if (writeErr) {
-          console.error('Помилка запису файлу:', writeErr.message);
-        } else {
-          console.log(`Результат записано у файл: ${options.output}`);
-        }
-      });
-    }
-
-  } catch (parseErr) {
-    console.error('Помилка парсингу JSON:', parseErr.message);
+  if (options.display) {
+    console.log(result);
   }
-});
+
+  if (options.output) {
+    const outputPath = path.resolve(options.output);
+    fs.writeFileSync(outputPath, result);
+    console.log(`Результат записано у файл: ${outputPath}`);
+  }
+
+  if (!options.output && !options.display) {
+    console.log('No output specified. Use -d to display or -o to save the result.');
+  }
+
+} catch (err) {
+  console.error(`Error: ${err.message}`);
+}пше
