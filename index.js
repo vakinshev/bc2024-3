@@ -44,4 +44,4 @@ try {
 
 } catch (err) {
   console.error(`Error: ${err.message}`);
-}пше
+}
